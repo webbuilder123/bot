@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Редактирование элементов</title>
+    <link rel="stylesheet" href="src/bootstrap.min.css">
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+        }
+        h1{
+            text-align: center;
+            margin: 1em;
+        }
+        body{
+            font-size: 16px;
+        }
+        table{
+            width: 100%;
+        }
+        table td {
+            width: 18%;
+            padding: 10px 5px;
+        }
+        table td:first-of-type, table td:nth-of-type(2) {
+            width: 5%;
+        }
+        thead td{
+            font-weight: bold;
+            font-size: 12px;
+        }
+        input{
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12">
+                <h1>
+                    <%=el %>
+                </h1>
+            </div>
+            <div class="col-sx-12">
+                <table class="table-striped table-bordered text-center">
+                    <thead>
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td>Uuid</td>
+                            <td>Наименование</td>
+                            <td>Цена</td>
+                            <td>Ссылка на фотку</td>
+                            <td>Ссылка на описание</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% for(var i=0; i<list.length;i++) {%>
+                            <tr>
+                                <td><button class="btn btn-primary btn-xs edit">Править</button></button></td>
+                                <td><button class="btn btn-danger btn-xs del">Удалить</button></td>
+                                <% for(var j=0; j<list[i].length;j++) {%>
+                                    <td><%=list[i][j] %></td>
+                                <%} %>
+                            </tr>
+                        <%} %>
+                        <thead class="last">
+                                <tr>
+                                    <td></td>
+                                    <td></td>
+                                    <td>Uuid</td>
+                                    <td>Наименование</td>
+                                    <td>Цена</td>
+                                    <td>Ссылка на фотку</td>
+                                    <td>Ссылка на описание</td>
+                                </tr>
+                            </thead>
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td><input class="form-control" type="text" name="" id="" disabled></td>
+                            <td><input class="form-control" type="text" name="name" id=""></td>
+                            <td><input class="form-control" type="text" name="price" id=""></td>
+                            <td><input class="form-control" type="text" name="urlPic" id=""></td>
+                            <td><input class="form-control" type="text" name="urlDesc" id=""></td>
+                        </tr>
+                        <tr>
+                            <td colspan="7"><button class="btn btn-success btn-lg add">Добавить</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script src='src/jquery.min.js'></script>
+    <script>
+        ($(function(){
+             $('body').css('background-color', '#eee')
+             $('.add').click(function(event) {
+                event.preventDefault()
+                var name = $('input[name=name]').val(),
+                    price = $('input[name=price]').val(),
+                    urlPic = $('input[name=urlPic]').val(),
+                    urlDesc = $('input[name=urlDesc]').val()
+                var obj = {
+                    name: name,
+                    price: price,
+                    urlPic: urlPic,
+                    urlDesc: urlDesc
+                }
+                console.log(obj)
+                console.log(JSON.stringify(obj))
+                $('.last').prepend('<tr><td><button class="btn btn-primary btn-xs edit">Править</button></button></td><td><button class="btn btn-danger btn-xs del">Удалить</button></td><td></td><td>'+name+'</td><td>'+price+'</td><td>'+urlPic+'</td><td>'+urlDesc+'</td></tr>')
+
+            })
+            
+            $('table').on('click', 'button.del', function(event) {
+			event.preventDefault();
+            var uuid = $(this).parent().next().text()
+            $(this).parents('tr').remove()
+		})
+            $('table').on('click', 'button.edit',function(event) {
+			event.preventDefault();
+			var uuid = $(this).parent().next().text()
+		})
+        }))
+       
+    </script>
+</body>
+</html>
