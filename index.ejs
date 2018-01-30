@@ -51,7 +51,7 @@
                         <tr>
                             <td></td>
                             <td></td>
-                            <td>Uuid</td>
+                            <td>Uuid(auto)</td>
                             <td>Наименование</td>
                             <td>Цена</td>
                             <td>Ссылка на фотку</td>
@@ -82,14 +82,14 @@
                         <tr>
                             <td></td>
                             <td></td>
-                            <td><input class="form-control" type="text" name="" id="" disabled></td>
+                            <td><input class="form-control" type="text" name="uiid" id="" disabled></td>
                             <td><input class="form-control" type="text" name="name" id=""></td>
                             <td><input class="form-control" type="text" name="price" id=""></td>
                             <td><input class="form-control" type="text" name="urlPic" id=""></td>
                             <td><input class="form-control" type="text" name="urlDesc" id=""></td>
                         </tr>
                         <tr>
-                            <td colspan="7"><button class="btn btn-success btn-lg add">Добавить</button></td>
+                            <td colspan="7"><button class="btn btn-success btn-lg add">Добавить/ Изменить</button> <button class="btn btn-warning btn-lg res">Сбросить</button></td>
                         </tr>
                     </tbody>
                 </table>
@@ -99,25 +99,42 @@
     <script src='src/jquery.min.js'></script>
     <script>
         ($(function(){
+            var el = ''
              $('body').css('background-color', '#eee')
              $('.add').click(function(event) {
                 event.preventDefault()
                 var name = $('input[name=name]').val(),
                     price = $('input[name=price]').val(),
                     urlPic = $('input[name=urlPic]').val(),
-                    urlDesc = $('input[name=urlDesc]').val()
+                    urlDesc = $('input[name=urlDesc]').val(),
+                    uiid = $('input[name=uiid]').val()
+                if(!name){
+                    alert('заполни поля')
+                    return
+                }
+
                 var obj = {
                     name: name,
                     price: price,
                     urlPic: urlPic,
                     urlDesc: urlDesc
                 }
+                if(uiid)
+                    $(el).parents('tr').remove()
+                else
+                    uiid=Math.random().toFixed(3)*1000
                 console.log(obj)
                 console.log(JSON.stringify(obj))
-                $('.last').prepend('<tr><td><button class="btn btn-primary btn-xs edit">Править</button></button></td><td><button class="btn btn-danger btn-xs del">Удалить</button></td><td></td><td>'+name+'</td><td>'+price+'</td><td>'+urlPic+'</td><td>'+urlDesc+'</td></tr>')
+                $('.last').append('<tr><td><button class="btn btn-primary btn-xs edit">Править</button></button></td><td><button class="btn btn-danger btn-xs del">Удалить</button></td><td>'+uiid+'</td><td>'+name+'</td><td>'+price+'</td><td>'+urlPic+'</td><td>'+urlDesc+'</td></tr>')
+                el = ''
+                $('input[name=uiid]').val('')
+                $('input[name=name]').val('')
+                $('input[name=price]').val('')
+                $('input[name=urlPic]').val('')
+                $('input[name=urlDesc]').val('')
 
             })
-            
+
             $('table').on('click', 'button.del', function(event) {
 			event.preventDefault();
             var uuid = $(this).parent().next().text()
@@ -125,8 +142,23 @@
 		})
             $('table').on('click', 'button.edit',function(event) {
 			event.preventDefault();
-			var uuid = $(this).parent().next().text()
-		})
+            var uuid = $(this).parent().next().next().text()
+            el = this
+            console.log(el)
+            $('input[name=uiid]').val($(this).parent().next().next().text())
+            $('input[name=name]').val($(this).parent().next().next().next().text())
+            $('input[name=price]').val($(this).parent().next().next().next().next().text())
+            $('input[name=urlPic]').val($(this).parent().next().next().next().next().next().text())
+            $('input[name=urlDesc]').val($(this).parent().next().next().next().next().next().next().text())
+        })
+        $('.res').click(function(event) {
+            el = ''
+            $('input[name=uiid]').val('')
+            $('input[name=name]').val('')
+            $('input[name=price]').val('')
+            $('input[name=urlPic]').val('')
+            $('input[name=urlDesc]').val('')
+        })
         }))
        
     </script>
