@@ -1,0 +1,49 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+h1 {
+    text-align: center;
+    margin: 1em;
+}
+
+body {
+    font-size: 14px;
+}
+
+table {
+    width: 100%;
+}
+
+table td {
+    width: 18%;
+    padding: 10px 5px;
+}
+
+td div{
+    text-overflow: clip;
+    word-wrap:break-word;
+    max-height: 4rem;
+    max-width: 100%;
+    overflow: auto;
+}
+table td:first-of-type,
+table td:nth-of-type(2) {
+    width: 5%;
+}
+table td:last-of-type div{
+    font-size: 12px;
+}
+table td:nth-of-type(6) div{
+    max-width: 200px;
+}
+
+thead td {
+    font-weight: bold;
+    font-size: 12px;
+}
+
+input {
+    width: 100%;
+}

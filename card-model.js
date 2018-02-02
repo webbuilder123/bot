@@ -6,10 +6,19 @@ const CardSchema = new Schema({
         type: String,
         required: true
     },
+    price: {
+        type: String,
+        default: 'По запросу'
+    },
     urlPic: {
         type: String,
         default: 'https://teleporto.ru/images/detailed/13622/1016189165.jpg?t=1499603463'
+    },
+    urlDesc: {
+        type: String,
+        default: ''
     }
+
 })
 
-mongoose.model('card', CardSchema)
+mongoose.model('card1', CardSchema)
