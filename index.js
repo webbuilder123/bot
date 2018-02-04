@@ -6,9 +6,13 @@ const underscore = require('underscore')
 const express = require('express')
 const path = require('path')
 const bodyParser = require('body-parser')
+//const util = require('util')
+//const fs = require('fs')
 const S = require('string')
 const state = {}
 const videocards = {}
+const db = {}
+const time = {}
 ///////////////////////////////
 const config = require('./config')
 const kb = require('./kb-keys')
@@ -48,8 +52,8 @@ bot.onText(/\/help/, msg => {
 bot.on('message', msg => {
     const chatId = helpers.chatId(msg)
     const text = msg.text.trim()
-    console.log('msg')
-    console.log(state)
+    //console.log('msg')
+    //console.log(state)
     if (msg.text == kb.back) {
         if (state[chatId])
             delete state[chatId]
@@ -72,8 +76,12 @@ bot.on('message', msg => {
 bot.on('callback_query', query => {
     const queryID = helpers.queryChatId(query)
     const id = query.data
-    state[queryID] = { cardId: id, date: Date.now(), name: '' }
-    sendHTML(queryID, 'Отправьте контактную информацию и мы свяжемся с Вами', 'back')
+    if(videocards[queryID]){
+        state[queryID] = { cardId: id, date: Date.now(), name: '' }
+        sendHTML(queryID, 'Отправьте контактную информацию и мы свяжемся с Вами', 'back')
+    }
+    else
+        sendHTML(queryID, 'Состояние устарело, посторите запрос заново')
 })
 /////////////////////////////
 function sendHTML(chatId, html, kbName = null) {
@@ -91,9 +99,10 @@ function sendHTML(chatId, html, kbName = null) {
 
 function findCard(chatId, text) {
     videocards[chatId] = {}
+    time[chatId] = {date: Date.now()}
     const arr = text.split(' ')
     Card.find({}).then(cards => {
-        console.log(cards)
+        //console.log(cards)
         const filtered = arr.filter(el => {
             el.trim()
             return el.match(/\w\d/)
@@ -120,11 +129,11 @@ function findCard(chatId, text) {
                     }
                 }
             ).then(_=>{
-                console.log(videocards[chatId])
+                //console.log(videocards[chatId])
                 let html = ''
                 const keys = Object.keys(videocards[chatId])
                 keys.forEach(key=>{
-                    console.log(videocards[chatId][key])
+                    //console.log(videocards[chatId][key])
                     html += `${key}\n${videocards[chatId][key].caption}\n`
                 })
                 sendHTML(chatId, `
@@ -158,7 +167,20 @@ function sendDetail(chatId, text){
     })
 }
 function orderCard(chatId, text, name, username) {
-    if (state[chatId].cardId) {
+    if(state[chatId].cardId && db[chatId] && db[chatId][(state[chatId].cardId)]){
+        const id = state[chatId].cardId
+        const card = db[chatId][id]
+        //console.log(card)
+        const html = `Заявка на карту ${card.name} от ${text}, карты нет в базе, ссылка на маркете  https://market.yandex.ru/${card.curlc}, цена ${card.price}, описание ${card.desc}, никнейм заказчика ${username}, имя заказчика ${name}`
+        mailer.mail(html)
+        bot.sendMessage(chatId, '<b>Ваша заявка принята</b>', {
+            reply_markup: {
+                remove_keyboard: true
+            }, parse_mode: 'HTML'
+        })
+        delete state[chatId]
+    }
+    else if (state[chatId].cardId) {
         const id = state[chatId].cardId
         Card.findById(id).then(card => {
             const html = `Заявка на карту ${card.name} от ${text}, карта есть в базе, id карты ${card._id}, цена ${card.price}, никнейм заказчика ${username}, имя заказчика ${name}`
@@ -169,21 +191,17 @@ function orderCard(chatId, text, name, username) {
                 }, parse_mode: 'HTML'
             })
             delete state[chatId]
-            delete videocards[chatId]
         })
     }
-    else {
-        const html = `Заявка на карту  от ${text}, карты нет в базе, цена ${card.price}, никнейм заказчика ${username}, имя заказчика ${name}`
-        mailer.mail(html)
-        bot.sendMessage(chatId, '<b>Ваша заявка принята</b>', {
+    else
+        bot.sendMessage(chatId, '<b>Какая-то ошибка</b>', {
             reply_markup: {
                 remove_keyboard: true
             }, parse_mode: 'HTML'
         })
-        delete state[chatId]
-    }
 }
 function parseCard(chatId, arr, text) {
+    db[chatId] = {}
     const re = new RegExp('\\s', 'g');
     const urlParse = `https://market.yandex.ru/catalog/55314/list?text=${text}`.replace(re, '%20')
     const option = {
@@ -191,43 +209,77 @@ function parseCard(chatId, arr, text) {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36',
           'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-          'Cookie':'dps=1.0; yandexuid=2192865601481460764; _ym_uid=1481464439957037806; fuid01=584d51c60ebf55fd.l6r8F6zTeQzLGrUjRGlxZef4yUKCEdS9gOnefNCHOZ3ECujcG6tJ5bT3Ia742TX6aSOPjxKEtLJB-9U1tMC02uBEMMOHFhMumk9yqkkbN4oye2Ff7CY4Tvs2ELfYjDcZ; mda=0; L=AX1HAVhNegdFU1ptf29EWk98VWNEVE5GDiAUOR0HBhksHDMcNyMu.1504679639.13243.326702.62c8bfc343a87277545588da620e8927; yandex_gid=197; yabs-frequency=/4/000C0000001fr4rQ/; zm=m-everything_index.webp.css%3Awww_Wt5E9cvzwB_3aQvadnqQF_cYB4E%3Al; Session_id=3:1515860389.5.0.1504679639626:qMe7sg:1d.1|452409244.0.2|175773.833889.j3Po8UfOMPeAEuzClckogqnKa-g; sessionid2=3:1515860389.5.0.1504679639626:qMe7sg:1d.1|452409244.0.2|175773.359859.eqUL1QK91P33v_7Sm1iJX1l9_uI; yandex_login=zhen.cowalencko; _ym_isad=2; i=puoLQ64jnlcGA8a/YqwEs7g4V7wb/6zSHIRqqGrNY60fNQsENybeVs6NCiioBdSrq4zgIQgLYy2JcDaT8tr+CAoytC0=; yp=1822159200.sp.family:0#1517512662.sd_popup_cl.1#1517511597.dswa.0#1517492292.dwbs.11#1517511597.dwss.39#1540576120.s_sw.1509040119#1820039639.udn.cDp6aGVuLmNvd2FsZW5ja28%3D#1517501971.dwhs.1#1545767764.p_sw.1514231763#1517463028.dwys.8#1820039639.multib.1#1517511597.dsws.59#1518536998.shlos.1#1518536998.los.1#1518536998.losc.0#1516554663.ygu.1#1520025323.cnps.6081866586:max#1545768563.p_cl.1514232563#1516516996.szm.1:1440x900:1440x780#1516025838.nps.92495383:close; ys=wprid.1515944168322419-1803496067955607251674822-man1-4529'
+          'Cookie':'yandexuid=9896389531504700533; _ym_uid=1505673586754509952; mda=0; fuid01=5a3b52283a35f20b.pewDViZe2wmywb098fMxNZFXYs70vVLvVnPfii5r5Z5yeqreXK_0R6V_JCG9WuKnS4BfDynhh_W1xd-bot-V6RFI4Di5KRnn8lItAss7KLbgNKcPsTc_kPpd8-X9ktfI; L=SXJXfFhqfHxFA2JHA3F7b0FwX2J/Xnp3AiUMUQs+EzRPEh4dFTM=.1516030641.13379.341935.ab43f4aa9c0eefd0c1e14ab6e9d35121; yabs-frequency=/4/00010000003nqLnQ/Er2mSFmj8TSySd3yBI00/; my=YwA=; _ym_isad=1; Session_id=3:1517757189.5.0.1516030641681:_jK7sg:10.1|588115325.0.2|176841.702567.FKHYdJnnra8Ul_THjpKclq5cKNU; sessionid2=3:1517757189.5.0.1516030641681:_jK7sg:10.1|588115325.0.2|176841.495450.-_adQk00ewPD-YoyLYOR8nAQ6Bw; yandex_login=sozdatel.botov; yandex_gid=197; i=FFiJcjbbEKYt0AOGIizUWuEYeoHXOU/0RJ69+mo2W8M1jMwQR2BC9vFU7birJQRYyeNGOXKJ2ezaqbVPCxzKfhNfbeY=; ys=wprid.1517759894773615-1534395029072736341567634-vla1-2438; yp=1520349991.ygu.1#1549203528.old.1#1518363636.szm.1:1440x900:1440x780#1520351896.shlos.1#1520351896.los.1#1520351896.losc.0#1549295896.p_sw.1517759895; uid=/sYr8Fp3MMyA6wDMPT7vAg==; _ym_visorc_160656=b; _ym_visorc_45411513=b; HISTORY_AUTH_SESSION=8ef2438d; currentRegionId=197; currentRegionName=%D0%91%D0%B0%D1%80%D0%BD%D0%B0%D1%83%D0%BB; ugc-poll-asked=true; fonts-loaded=1; parent_reqid_seq=232048d8f6979d94394246edd96c2cc8%2C7a6275bf9fc6900c716dd360b92388fa; head-banner=%7B%22closingCounter%22%3A0%2C%22showingCounter%22%3A7%2C%22shownAfterClicked%22%3Afalse%2C%22isClicked%22%3Afalse%7D'
         }
     }
     request(option , (e, r, b)=>{
         if(e) throw e
         if(!e && r.statusCode===200){
             const $ = cheerio.load(b)
-            let res = util.inspect(b)
-            fs.writeFileSync('./i.html', res, {encoding: 'utf-8'})
-            arr1 = []
+            //let res = util.inspect(b)
+            //fs.writeFileSync('./i.html', res, {encoding: 'utf-8'})
+            const dt = Number(String(Date.now()).substr(-7, 5))
             $('.n-snippet-card2').each((i, el)=>{
                 const name = $(el).find('.n-link_theme_blue').text()//name
+                const curlc = $(el).find('.n-link_theme_blue').attr('href')
                 const picUrl = 'https:' + $(el).find('img').attr('src')
                 let desc = ''
-                $(el).find('li').each((i, li)=>desc += $(li).text())
+                $(el).find('li').each((i, li)=>desc += $(li).text()+' ')
                 const price1 = $(el).find('.n-snippet-card2__main-price').text()
                 let price
                 if(price1.match(/\d/))
                     price = price1.match(/\d/g).join('')
                 else
                     price = price1
-                arr1.push([i, name, picUrl, desc, price])
+                db[chatId][dt+i]={name, picUrl, desc, price, curlc}
+                videocards[chatId]['/c'+(dt+i)] = {
+                    caption : `<b>Модель</b>: ${name}\n<b>Цена</b>: ${price}\n<b>Описание</b>: ${desc}`,
+                    urlPic : picUrl,
+                    id: (dt+i)
+                }
             })
+            let html = ''
+            const keys = Object.keys(videocards[chatId])
+            keys.forEach(key=>{
+                //console.log(videocards[chatId][key])
+                html += `${key}\n${videocards[chatId][key].caption}\n\n`
+            })
+            if(Object.keys(db[chatId]).length == 0)
+                sendHTML(chatId, '<b>Ничего не найдено, попробуйте изменить запрос</b>')
+            else
+                sendHTML(chatId, `
+            Мы нашли для вас следующие варианты:\n${html}\n`)
+            //console.log(db)
+            //console.log(videocards)
         }
+        else
+            sendHTML(chatId, 'Попробуйте позже')
     
     })
-    console.log(22)
-    console.log(arguments)
-    const arr1 = []
-
 }
+(function destroy(){
+  const timeKeys = Object.keys(time)
+  if(timeKeys.length>0)
+    timeKeys.forEach(key=>{
+        if(time[key].date && (Date.now() - time[key].date) > 1000*60*60){
+            if(videocards[key])
+                delete videocards[key]
+            if(db[key])
+                delete db[key]
+            if(state[key])
+                delete state[key]
+            if(time[key])
+                delete time[key]
+        }
+    })
+    setTimeout(destroy, 15*60*1000)  
+})()
 /////////////////////////////
 app.use(bodyParser.urlencoded({
     extended: true
 }))
 app.use('*', (req, res, next) => {
-    console.log(req.url, req.method, req.body)
+    //console.log(req.url, req.method, req.body)
     next()
 })
 app.get('/', (req, res) => {
